@@ -4,9 +4,18 @@ import 'package:path_provider/path_provider.dart';
 
 /// DatabaseHelper handles all SQLite database operations for CareLink.
 /// This includes user management, request handling, and audit logging.
+/// 
+/// Note: On web platform, uses in-memory storage as fallback since
+/// path_provider is not available on web.
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
+  static bool _isWebPlatform = false;
+  static final Map<String, List<Map<String, dynamic>>> _inMemoryData = {
+    'users': [],
+    'requests': [],
+    'audit_logs': [],
+  };
 
   factory DatabaseHelper() {
     return _instance;
@@ -23,13 +32,25 @@ class DatabaseHelper {
 
   /// Initialize the database and create tables
   Future<Database> _initializeDatabase() async {
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final path = join(documentsDirectory.path, 'carelink.db');
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createTables,
-    );
+    try {
+      final documentsDirectory = await getApplicationDocumentsDirectory();
+      final path = join(documentsDirectory.path, 'carelink.db');
+      return await openDatabase(
+        path,
+        version: 1,
+        onCreate: _createTables,
+      );
+    } catch (e) {
+      // Fallback for web platform where path_provider is not available
+      print('Database initialization failed, using in-memory storage: $e');
+      _isWebPlatform = true;
+      return _getInMemoryDatabase();
+    }
+  }
+
+  /// Create an in-memory database (fallback for web)
+  Database _getInMemoryDatabase() {
+    return InMemoryDatabase();
   }
 
   /// Create all database tables
@@ -530,4 +551,138 @@ class DatabaseHelper {
       print('Error clearing data: $e');
     }
   }
+}
+
+/// In-memory mock database implementation for web platform testing
+/// Provides basic Database interface methods without file system access
+class InMemoryDatabase implements Database {
+  final Map<String, List<Map<String, dynamic>>> _tables = {
+    'users': [],
+    'requests': [],
+    'audit_logs': [],
+  };
+
+  @override
+  Future<List<Map<String, dynamic>>> query(
+    String table, {
+    bool? distinct,
+    List<String>? columns,
+    String? where,
+    List<dynamic>? whereArgs,
+    String? groupBy,
+    String? having,
+    String? orderBy,
+    int? limit,
+    int? offset,
+  }) async {
+    List<Map<String, dynamic>> results = _tables[table] ?? [];
+    
+    // Apply where clause
+    if (where != null && whereArgs != null) {
+      results = results.where((row) {
+        return _evaluateWhere(where, row, whereArgs);
+      }).toList();
+    }
+    
+    // Apply limit and offset
+    if (offset != null) results = results.skip(offset).toList();
+    if (limit != null) results = results.take(limit).toList();
+    
+    return results;
+  }
+
+  @override
+  Future<int> insert(String table, Map<String, dynamic> values, {String? nullColumnHack, ConflictAlgorithm? conflictAlgorithm}) async {
+    _tables[table]!.add(values);
+    return _tables[table]!.length;
+  }
+
+  @override
+  Future<int> update(String table, Map<String, dynamic> values, {String? where, List<dynamic>? whereArgs, ConflictAlgorithm? conflictAlgorithm}) async {
+    int count = 0;
+    final tableData = _tables[table] ?? [];
+    for (int i = 0; i < tableData.length; i++) {
+      if (where == null || _evaluateWhere(where, tableData[i], whereArgs ?? [])) {
+        tableData[i].addAll(values);
+        count++;
+      }
+    }
+    return count;
+  }
+
+  @override
+  Future<int> delete(String table, {String? where, List<dynamic>? whereArgs}) async {
+    final tableData = _tables[table] ?? [];
+    int initialCount = tableData.length;
+    _tables[table] = tableData.where((row) {
+      if (where == null) return false;
+      return !_evaluateWhere(where, row, whereArgs ?? []);
+    }).toList();
+    return initialCount - _tables[table]!.length;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> rawQuery(String sql, [List<dynamic>? arguments]) async {
+    print('Raw query on in-memory DB: $sql');
+    return [];
+  }
+
+  @override
+  Future<T?> transaction<T>(Future<T> Function(Transaction txn) action, {bool? exclusive}) async {
+    return await action(this as Transaction);
+  }
+
+  @override
+  Future<int> execute(String sql, [List<dynamic>? arguments]) async {
+    return 0;
+  }
+
+  @override
+  Future<void> close() async {}
+
+  @override
+  Future<T> batch<T>(Future<T> Function(Batch batch) updates) async {
+    return await updates(this as Batch);
+  }
+
+  bool _evaluateWhere(String where, Map<String, dynamic> row, List<dynamic> whereArgs) {
+    // Simple where clause evaluation
+    // This is a basic implementation - for more complex cases, would need SQL parser
+    if (where.contains('=')) {
+      final parts = where.split('=');
+      final column = parts[0].trim();
+      if (whereArgs.isNotEmpty) {
+        return row[column] == whereArgs[0];
+      }
+    }
+    return true;
+  }
+
+  // Unimplemented Database methods
+  @override
+  int getVersion() => 1;
+
+  @override
+  Future<void> setVersion(int version) async {}
+
+  @override
+  bool isOpen() => true;
+
+  @override
+  String get path => 'in-memory';
+
+  @override
+  Future<List<Map<String, Object?>>> rawQueryCursor(String sql, [List<dynamic>? arguments]) async => [];
+
+  @override
+  Future<int> rawDelete(String sql, [List<dynamic>? arguments]) async => 0;
+
+  @override
+  Future<int> rawUpdate(String sql, [List<dynamic>? arguments]) async => 0;
+
+  @override
+  Future<void> applyUpdates(List<SqlCommand> updates) async {}
+
+  @override
+  Future<List<SqlCommand>> getUpdates() async => [];
 }

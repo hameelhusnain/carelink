@@ -17,6 +17,7 @@
         "provider",
         "shared_preferences",
         "sqflite",
+        "sqflite_common_ffi",
         "uuid"
       ],
       "devDependencies": [
@@ -124,6 +125,17 @@
         "path_provider_linux",
         "path_provider_platform_interface",
         "path_provider_windows"
+      ]
+    },
+    {
+      "name": "sqflite_common_ffi",
+      "version": "2.3.7+1",
+      "dependencies": [
+        "meta",
+        "path",
+        "sqflite_common",
+        "sqlite3",
+        "synchronized"
       ]
     },
     {
@@ -419,12 +431,29 @@
       ]
     },
     {
+      "name": "synchronized",
+      "version": "3.4.0+1",
+      "dependencies": []
+    },
+    {
       "name": "sqflite_common",
       "version": "2.5.8",
       "dependencies": [
         "meta",
         "path",
         "synchronized"
+      ]
+    },
+    {
+      "name": "sqlite3",
+      "version": "2.9.4",
+      "dependencies": [
+        "collection",
+        "ffi",
+        "meta",
+        "path",
+        "typed_data",
+        "web"
       ]
     },
     {
@@ -615,11 +644,6 @@
         "path",
         "plugin_platform_interface"
       ]
-    },
-    {
-      "name": "synchronized",
-      "version": "3.4.0+1",
-      "dependencies": []
     },
     {
       "name": "vm_service",

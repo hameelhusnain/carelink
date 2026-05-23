@@ -24,7 +24,7 @@ class StatusBadge extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         border: Border.all(color: color),
         borderRadius: BorderRadius.circular(AppSizing.buttonRadius),
       ),
@@ -375,7 +375,7 @@ class InfoBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.info.withOpacity(0.1),
+        color: backgroundColor ?? AppColors.info.withValues(alpha: 0.1),
         border: Border.all(color: backgroundColor ?? AppColors.info),
         borderRadius: BorderRadius.circular(AppSizing.buttonRadius),
       ),
