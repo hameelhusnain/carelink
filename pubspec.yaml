@@ -16,7 +16,6 @@ dependencies:
 
   # Database
   sqflite: ^2.3.0
-  sqflite_common_ffi: ^2.3.0
   path_provider: ^2.1.0
 
   # Authentication & Security
@@ -47,11 +46,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Assets (optional - can add images/icons later)
-  # assets:
-  #   - assets/
-  #   - assets/images/
-  #   - assets/icons/
+  # Assets
+  assets:
+    - assets/
+    - assets/images/
+    - assets/icons/
 
   # Fonts (optional - can add custom fonts)
   # fonts:
